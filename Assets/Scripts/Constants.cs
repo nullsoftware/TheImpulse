@@ -15,4 +15,11 @@ public static class Constants
 
     // input system constants
     public const string KeyboardMouseControlScheme = "KeyboardMouse";
+
+    // scene names
+    public const string MainMenuScene = "MainMenu";
+    public const string PlaygroundScene = "Playground";
+
+    // save file
+    public const string DefaultSaveFileName = "save.bin";
 }

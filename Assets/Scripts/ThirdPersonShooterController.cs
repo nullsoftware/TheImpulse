@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Cinemachine;
 using StarterAssets;
+using UnityEngine.Animations.Rigging;
 
 [RequireComponent(typeof(StarterAssetsInputs))]
 [RequireComponent(typeof(ThirdPersonController))]
@@ -12,6 +13,8 @@ public class ThirdPersonShooterController : MonoBehaviour
     [SerializeField] private float _normalCameraSensativity = 1f;
     [SerializeField] private float _aimCameraSensativity = 0.5f;
     [SerializeField] private LayerMask _aimColliderMask = new LayerMask();
+    [SerializeField] private Transform _aimTarget;
+    [SerializeField] private Rig _rig;
 
     private StarterAssetsInputs _input;
     private ThirdPersonController _controller;
@@ -30,6 +33,7 @@ public class ThirdPersonShooterController : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, 999f, _aimColliderMask))
         {
             aimTarget = hit.point;
+            _aimTarget.position = hit.point;
         }
 
         if (_input.Aim)
@@ -37,6 +41,7 @@ public class ThirdPersonShooterController : MonoBehaviour
             _aimVirtualCamera.gameObject.SetActive(true);
             _controller.SetSensativity(_aimCameraSensativity);
             _controller.SetRotateOnMove(false);
+            _rig.weight = Mathf.Lerp(_rig.weight, 1, 20f*Time.deltaTime);
 
             Vector3 aimDirection = aimTarget;
 
@@ -57,6 +62,7 @@ public class ThirdPersonShooterController : MonoBehaviour
         }
         else
         {
+            _rig.weight = Mathf.Lerp(_rig.weight, 0, 20f * Time.deltaTime);
             _aimVirtualCamera.gameObject.SetActive(false);
             _controller.SetRotateOnMove(true);
             _controller.SetSensativity(_normalCameraSensativity);
