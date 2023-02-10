@@ -1,8 +1,6 @@
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
+using UnityEngine.Events;
 using UnityEngine.InputSystem;
-using static UnityEngine.Rendering.DebugUI;
-#endif
 
 namespace StarterAssets
 {
@@ -16,6 +14,7 @@ namespace StarterAssets
         public bool Sprint;
         public bool Aim;
         public bool Shoot;
+        public bool Pause;
 
         [Header("Movement Settings")]
         public bool AnalogMovement;
@@ -59,6 +58,11 @@ namespace StarterAssets
             ShootInput(value.isPressed);
         }
 
+        public void OnPause(InputValue value)
+        {
+            PauseInput(value.isPressed);
+        }
+
         #endregion
 
         #region Input Methods
@@ -91,6 +95,11 @@ namespace StarterAssets
         public void ShootInput(bool value)
         {
             Shoot = value;
+        }
+
+        public void PauseInput(bool value)
+        {
+            Pause = value;
         }
 
         #endregion

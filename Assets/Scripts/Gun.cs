@@ -8,4 +8,5 @@ using UnityEngine;
 public class Gun : MonoBehaviour
 {
     [SerializeField] private Transform _bulletStart;
+    [SerializeField] private Weapon _weapon;
 }

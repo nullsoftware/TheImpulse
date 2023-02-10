@@ -9,8 +9,8 @@ public class Inventory : MonoBehaviour, IEnumerable<PickableItemInfo>
 {
     [SerializeField] private byte _width = 20;
     [SerializeField] private byte _height = 6;
+    [SerializeField] private UnityEvent<PickableItemInfo> _itemPickupEvent = new UnityEvent<PickableItemInfo>();
 
-    private UnityEvent<PickableItemInfo> _itemPickupEvent = new UnityEvent<PickableItemInfo>();
     private PickableItemInfo[,] _items;
 
     public event UnityAction<PickableItemInfo> ItemPickup
@@ -19,54 +19,51 @@ public class Inventory : MonoBehaviour, IEnumerable<PickableItemInfo>
         add => _itemPickupEvent.AddListener(value);
     }
 
-    public bool IsEmpty => this.All(t => t.Item == null);
-    public bool IsFull => this.All(t => t.Item != null);
+    public bool IsEmpty => this.ToArray().All(t => t == null);
+    public bool IsFull => this.ToArray().All(t => t != null);
 
     private void Start()
     {
         _items = new PickableItemInfo[_height, _width];
     }
 
-    private void OnTriggerEnter(Collider other)
+    public void TryCollectItem(PickableItemContainer container)
     {
-        if (other.TryGetComponent(out PickableItemContainer container))
+        if (container.Item.CanPickup(this))
         {
-            if (container.Item.CanPickup(this))
+            PickableItemInfo itemInfo;
+
+            switch (container.Item.StackBehavior)
             {
-                PickableItemInfo itemInfo;
+                case ItemStackBehavior.Stackable:
+                    itemInfo = FindStackableItem(container);
+                    if (itemInfo == null && TryAllocateItem(container.Item, out PickableItemInfo tmp))
+                        itemInfo = tmp;
 
-                switch (container.Item.StackBehavior)
-                {
-                    case ItemStackBehavior.Stackable:
-                        itemInfo = FindStackableItem(container);
-                        if (itemInfo == null && TryAllocateItem(container.Item, out PickableItemInfo tmp))
-                            itemInfo = tmp;
+                    if (itemInfo == null)
+                        return;
 
-                        if (itemInfo == null)
-                            return;
+                    itemInfo.Amount += container.Amount;
+                    break;
 
-                        itemInfo.Amount += container.Amount;
-                        break;
+                case ItemStackBehavior.NotStackable:
+                case ItemStackBehavior.Unique:
+                    TryAllocateItem(container.Item, out itemInfo);
 
-                    case ItemStackBehavior.NotStackable:
-                    case ItemStackBehavior.Unique:
-                        TryAllocateItem(container.Item, out itemInfo);
+                    if (itemInfo == null)
+                        return;
 
-                        if (itemInfo == null)
-                            return;
+                    break;
 
-                        break;
-
-                    default:
-                        throw new NotSupportedException();
-                }
-
-                container.Item.Pickup(this);
-                container.gameObject.SetActive(false);
-                Destroy(container.Item);
-
-                _itemPickupEvent?.Invoke(itemInfo);
+                default:
+                    throw new NotSupportedException();
             }
+
+            container.Item.Pickup(this);
+            container.gameObject.SetActive(false);
+            Destroy(container.Item);
+
+            _itemPickupEvent?.Invoke(itemInfo);
         }
     }
 
@@ -104,10 +101,7 @@ public class Inventory : MonoBehaviour, IEnumerable<PickableItemInfo>
         {
             for (int x = 0; x < _width; x++)
             {
-                if (_items[y, x] != null)
-                {
-                    yield return _items[y, x];
-                }
+                yield return _items[y, x];
             }
         }
     }
@@ -126,7 +120,7 @@ public class Inventory : MonoBehaviour, IEnumerable<PickableItemInfo>
             return false;
         }
 
-        if (item.StackBehavior == ItemStackBehavior.Unique && this.Any(t => t.Item == item))
+        if (item.StackBehavior == ItemStackBehavior.Unique && this.Any(t => t?.Item == item))
         {
             return false;
         }
@@ -138,6 +132,7 @@ public class Inventory : MonoBehaviour, IEnumerable<PickableItemInfo>
                 if (_items[y, x] == null)
                 {
                     _items[y, x] = itemInfo = new PickableItemInfo(item);
+                    return true;
                 }
             }
         }
@@ -149,6 +144,9 @@ public class Inventory : MonoBehaviour, IEnumerable<PickableItemInfo>
     {
         foreach (PickableItemInfo itemInfo in this)
         {
+            if (item is null)
+                continue;
+
             if (itemInfo.Item == item.Item && itemInfo.Amount + item.Amount <= itemInfo.Item.MaxStackAmount) 
                 return itemInfo;
         }
