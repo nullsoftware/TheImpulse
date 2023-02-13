@@ -22,7 +22,4 @@ public static class Constants
 
     // save file
     public const string DefaultSaveFileName = "save.bin";
-
-    // tags
-    public const string PlayerTag = "Player";
 }
